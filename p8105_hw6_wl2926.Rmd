@@ -198,3 +198,13 @@ confidence_intervals = summarize(bootstrap_results,
 confidence_intervals
 
 ```
+
+# Problem 3
+## Data Importation and preparation
+
+```{r}
+#import birthweight data
+birthweight_data = read.csv("data/birthweight.csv")
+#display the structure of the dataset
+str(birthweight_data)
+```
