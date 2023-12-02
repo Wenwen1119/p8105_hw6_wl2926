@@ -253,3 +253,42 @@ The descriptive statistics depict an almost equal number of babies from both sex
 Some variables such as `pnumlbw` and `pnumsga` appear to have constant values. 
 
 ### Histograms of all numerical variables.     
+```{r, message=FALSE}
+#select only numerical variables
+numerical_vars = birthweight_data[, sapply(birthweight_data,
+                                            is.numeric)]
+#plot histograms for all numerical variables
+plot_histograms = function(dataset) {
+  #get the number of rows and columns needed for the plots
+  ncol = 4
+  nrow = 4
+
+  #create a histogram for each variable and store in a list
+  hist_list = lapply(names(dataset), function(x) {
+    ggplot(dataset, aes(x = .data[[x]])) +
+      geom_histogram() + 
+      labs(y="Frequency",
+           x= x)+
+      theme(axis.title = element_text(size = 7),
+            axis.text.x = element_text(hjust = 1))
+  })
+
+  #visualize the histograms using grid layout
+  grid.arrange(grobs = hist_list, ncol = ncol, nrow = nrow)
+}
+plot_histograms(numerical_vars)
+```
+- From the histograms, only the `smoken` appears significantly skewed (to the right). A log transformation was applied to reduce the skewness and the results re-visualized. The histograms of the `pnumlbw` and `pnumsga` confirm the suspicions for zero-variance variables.     
+
+
+```{r}
+#log transform smoken; make a small addition to avoid infinity values
+birthweight_data$smoken = log(birthweight_data$smoken+1e5)
+par(mfrow=c(1,2))
+hist(numerical_vars$smoken,
+     xlab = "smoken",
+     main="Un-transformed 'smoken'")
+hist(birthweight_data$smoken,
+     xlab = "smoken",
+     main="Log-transformed 'smoken'")
+```
