@@ -7,6 +7,12 @@ output: github_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(viridis)
+library(broom)
+library(purrr)
+library(corrplot)
+library(gridExtra)
+library(caret)
+library(modelr)
 
 knitr::opts_chunk$set(
 	echo = TRUE,
@@ -97,4 +103,63 @@ model_results |>
   geom_point() + 
   geom_errorbar(aes(ymin = OR_CI_lower, ymax = OR_CI_upper)) + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+### Problem 2
+## Accessing the data
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2022-01-01",
+    date_max = "2022-12-31") |>
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) |>
+  select(name, id, everything())
+```
+
+```{r}
+#function to calculate R-squared and log(beta1 * beta2)
+calculate_metrics = function(data) {
+  model = lm(tmax ~ tmin + prcp, data = data)
+  tidy_results = broom::tidy(model)
+  r_squared = broom::glance(model)$r.squared
+  #taking the logarithm after converting to absolute values
+  beta_product = log(tidy_results$estimate[2]*
+                        tidy_results$estimate[3])
+  metrics_df = data.frame(R_squared = r_squared,
+                           Beta_product = beta_product)
+  return(metrics_df)
+}
+
+calculate_metrics(weather_df)
+
+```
+
+```{r}
+#function to extract R-squared and compute log(beta1*beta2) for each bootstrap replicate
+calculate_metrics = function(data) {
+  data= data.frame(data)
+  model = lm(tmax ~ tmin + prcp, data = data)
+  tidy_results = broom::tidy(model)
+  r_squared = broom::glance(model)$r.squared
+  #taking the logarithm of beta1*beta2
+  beta_product = log(tidy_results$estimate[2] * tidy_results$estimate[3])
+  #return a data frame for the current replicate
+  data.frame(R_squared = r_squared, Beta_product = beta_product)
+}
+
+#5000 bootstraps using modelr's bootstrap function
+boot = modelr::bootstrap(weather_df, 5000)
+
+#use the custom tidying function
+models = map(boot$strap, calculate_metrics)
+
+#combine the results into a data frame
+bootstrap_results = bind_rows(models, .id = "Replicate")
+
+#view the results
+head(bootstrap_results)
 ```
