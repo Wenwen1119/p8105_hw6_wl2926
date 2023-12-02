@@ -292,3 +292,47 @@ hist(birthweight_data$smoken,
      xlab = "smoken",
      main="Log-transformed 'smoken'")
 ```
+The histograms above show a comparison between the skewness in the un-transformed and log-transformed `smoken` variable, with the latter showing a smaller spread and thus smaller effect of skewness in the modeling to be carried out.  
+### Barplots of all categorical variables.      
+
+```{r, message=FALSE}
+#select only categorical variables
+categ_vars = birthweight_data[, sapply(birthweight_data,
+                                            is.factor)]
+#plot barplots for all factor variables
+plot_barplots = function(dataset) {
+  #get the number of rows and columns needed for the plots
+  ncol = 3
+  nrow = 2
+
+  #create a barplot for each variable and store in a list
+  hist_list = lapply(names(dataset), function(x) {
+    ggplot(dataset, aes(x = .data[[x]])) +
+      geom_bar() + 
+      labs(y="Frequency",
+           x= x)+
+      coord_flip()+
+      theme(axis.title = element_text(size = 7),
+            axis.text.x = element_text(hjust = 1))
+  })
+
+  #visualize the barplots using grid layout
+  grid.arrange(grobs = hist_list, ncol = ncol, nrow = nrow)
+}
+plot_barplots(categ_vars)
+```
+Some categorical variables, `malform` and `parity` in particular, have heavy class imbalances, and may thus contribute little to no explnatory power of the variation in birthweight of babies.
+
+
+### Correlation analysis    
+
+```{r}
+#calculate the correlation matrix
+cor_matrix = cor(numerical_vars, method = "pearson")
+
+#create a heatmap for correlation visualization
+corrplot(cor_matrix, method = "color",
+         type = "upper", tl.col = "black",
+         tl.srt = 45, hclust.method="complete")
+
+```
