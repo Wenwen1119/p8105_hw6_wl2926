@@ -243,3 +243,13 @@ str(birthweight_data)
 The response variable in this study is the 'bwt', which indicates a new born baby’s weight in grams.    
 
 To decide on the best features to use in a predictive model, we first explore the statistical properties of all numerical and categorical variables.    
+
+```{r}
+#descriptive statistics of birthweight data
+summary(birthweight_data)
+```
+
+The descriptive statistics depict an almost equal number of babies from both sexes, with male babies having the slightly higher number.     
+Some variables such as `pnumlbw` and `pnumsga` appear to have constant values. 
+
+### Histograms of all numerical variables.     
