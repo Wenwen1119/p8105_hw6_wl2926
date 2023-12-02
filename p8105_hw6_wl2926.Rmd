@@ -336,3 +336,151 @@ corrplot(cor_matrix, method = "color",
          tl.srt = 45, hclust.method="complete")
 
 ```
+The response variable `bwt` indicates weak to moderate positive and negative correlations with all the numerical variables. Notably, the response variable has a weak negative correlation with the `smoken` variable. The `ppbmi`, `ppwt`, and the `delwt` variables appear to have high correlations. They are all descriptive of a mother's weight for either before or after delivery. It might not be necessary to include all of them. For instance, the `ppbmi` is a direct derivative of the `ppwt`, and therefore the two are expected to be positively correlated.      
+### Near zero variance/ Zero variance variables.    
+
+Zero-variance variables are features in a dataset that do not add explanatory power to the observed variation in a dataset with respect to the response variable.   
+
+```{r}
+nzv = nearZeroVar(birthweight_data, saveMetrics= TRUE)
+#number of variables with near zero variance
+nzv |> filter(nzv == TRUE) |> nrow()
+#removing near zero variance variables
+birthweight_data = birthweight_data [, !nzv$nzv]
+```
+        
+Four variables were found to have zero or near zero variance, and were excluded from the data set. These included the `malform`, `parity`, `pnulbw`, and `pnumsga`. 
+### Multicollinearity.      
+
+Highly correlated variables could cause multicollinearity, which could make it difficult to estimate the effects of individual features on the response variable.    
+
+## Multiple linear regression modeling.      
+
+A total of 14 variables, including; babysex, bhead, blength, delwt, fincome, frace, gaweeks, menarche, mheight, momage, mrace, ppwt, and smoken were selected for the linear model building. 
+       
+```{r}
+#multiple linear regression model
+lm_model = lm(bwt ~ babysex + bhead + blength + delwt + fincome + frace +
+                 gaweeks + menarche + mheight + momage + mrace +
+                 ppwt + smoken, data = birthweight_data)
+#display a summary of the model
+summary(lm_model)
+```
+       ### Fitted vs. Residual plot.      
+
+```{r,message=FALSE}
+#add predictions from the linear model
+preds_resid_df = add_predictions(birthweight_data, lm_model, var = "pred")
+#add residuals from the lienar model
+preds_resid_df = add_residuals(preds_resid_df, lm_model, var="resid")
+
+
+ggplot(preds_resid_df, aes(x = pred, y = resid)) +
+  geom_point(color = "brown", size = 3, alpha=0.5) +
+  geom_smooth(method = "lm", color = "blue") +
+  labs(title = "Fitted birthweight values vs Residuals",
+       x = "Fitted birthweight", 
+       y = "Residuals")
+
+```
+        
+There isn't a clear pattern, trend, or shape in the plot of the fitted values versus the residuals of the multiple linear regression model. The residuals from the fitted linear model do not depict a significant deviation from the expectation of homoscedasticity which is; the spread or dispersion of residuals should be relatively constant across all levels of fitted values.  
+There isn't a clear pattern, trend, or shape in the plot of the fitted values versus the residuals of the multiple linear regression model. The residuals from the fitted linear model do not depict a significant deviation from the expectation of homoscedasticity which is; the spread or dispersion of residuals should be relatively constant across all levels of fitted values.    
+
+
+## Model comparison.     
+
+
+```{r}
+#alternative model 1 using length at birth and gestational age as predictors 
+model1 = lm(bwt ~ blength + gaweeks, data = birthweight_data)
+summary(model1)
+#alternative model 2 using head circumference, length, sex, and all their interactions
+model2 = lm(bwt ~ bhead * blength * babysex, data = birthweight_data)
+summary(model2)
+```
+
+        
+The alternative models have lower adjusted R-squared values compared to the proposed linear model.     
+
+
+```{r}
+#list of models
+models = list(lm_model, model1, model2)
+
+#function to calculate prediction errors for a single model
+calculate_errors = function(model, train_data, test_data) {
+  #add predictions to the test set
+  predictions_df = add_predictions(test_data, model, var = "pred")
+  #add residuals to the predictions
+  predictions_df = add_residuals(predictions_df, model, var = "resid")
+  #calculate RMSE (Root Mean Squared Error)
+  rmse = sqrt(mean(predictions_df$resid^2))
+  return(rmse)
+}
+
+#function to perform 1000 cross-validations and calculate errors for each model
+crossval_model = function(model) {
+  #create a cross-validation object
+  cv_results = crossv_mc(birthweight_data, n = 1000)
+  #calculate prediction errors for each fold
+  errors = map2_dbl(cv_results$train, cv_results$test, calculate_errors, model = model)
+  #return the errors
+  return(errors)
+}
+
+#apply the cross-validation function to each model
+errors_list = map(models, crossval_model)
+
+#model descriptions
+model_names = c("proposed_model","main_effects","three_way_interaction")
+
+#create a data frame with model names as columns
+errors_df = as.data.frame(setNames(errors_list, model_names))
+
+#view the resulting data frame
+head(errors_df)
+```
+
+
+### Mean Cross validated RMSE.    
+
+```{r}
+#mean CV error Comparison
+errors_df |>
+  summarise_all(mean)
+```
+         
+Proposed model achieves the lowest cross validated error of the three models. The three way interaction model using head circumference, length, and sex of the babies is the second best predictive model even though it uses just 3 variables (and their interactions) of the 14 applied in the proposed model.     
+
+
+### Boxplots of cross-validated errors.     
+
+```{r}
+#boxplot of Errors
+errors_df |>
+  gather(key = "Model", value = "Error") |>
+  ggplot(aes(x = Model, y = Error)) +
+  geom_boxplot() +
+  labs(title = "Boxplots of CV errors", x = "Model", y = "Error")
+
+```
+          
+All the three models show outliers in the cross-validated errors.     
+
+
+### Histograms of CV errors.    
+
+```{r}
+#Cross-Validation Error distribution
+errors_df |>
+  gather(key = "Model", value = "Error") |>
+  ggplot(aes(x = Error)) +
+  facet_wrap(~Model)+
+  geom_histogram(binwidth = 10, fill = "skyblue", color = "black") +
+  labs(title = "Cross-Validation Error Distribution", x = "Error", y = "Frequency")
+
+```
+
+        
+The CV error histograms ofthe models show deviations from the normal distribution.
