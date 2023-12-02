@@ -208,3 +208,8 @@ birthweight_data = read.csv("data/birthweight.csv")
 #display the structure of the dataset
 str(birthweight_data)
 ```
+
+```{r}
+#check for missing data
+sum(is.na(birthweight_data))
+```
