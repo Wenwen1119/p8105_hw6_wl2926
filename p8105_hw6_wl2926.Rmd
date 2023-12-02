@@ -213,3 +213,33 @@ str(birthweight_data)
 #check for missing data
 sum(is.na(birthweight_data))
 ```
+The baby birth weight dataset doesn't have missing values.    
+
+```{r}
+#convert variables to appropriate data dtypes
+birthweight_data$babysex = factor(birthweight_data$babysex,
+                                   levels = c(1, 2),
+                                   labels = c("male", "female"))
+birthweight_data$frace = factor(birthweight_data$frace,
+                                 levels = c(1, 2, 3, 4, 8, 9), 
+                                  labels = c("White", "Black", "Asian",
+                                             "Puerto Rican", "Other",
+                                             "Unknown"))
+birthweight_data$mrace = factor(birthweight_data$mrace,
+                                 levels = c(1, 2, 3, 4, 8, 9), 
+                                  labels = c("White", "Black", "Asian",
+                                             "Puerto Rican", "Other",
+                                             "Unknown"))
+birthweight_data$malform = factor(birthweight_data$malform,
+                                   levels = c(0, 1),
+                                   labels = c("absent", "present"))
+birthweight_data$parity = as.factor(birthweight_data$parity)
+
+#check the structure of the dataset after conversion
+str(birthweight_data)
+```
+## Data driven model building.      
+
+The response variable in this study is the 'bwt', which indicates a new born baby’s weight in grams.    
+
+To decide on the best features to use in a predictive model, we first explore the statistical properties of all numerical and categorical variables.    
