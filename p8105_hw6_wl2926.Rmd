@@ -163,3 +163,38 @@ bootstrap_results = bind_rows(models, .id = "Replicate")
 #view the results
 head(bootstrap_results)
 ```
+
+```{r}
+#visualize bootstrap distribution of R-squared
+ggplot(bootstrap_results, aes(x = R_squared)) +
+  geom_histogram(binwidth = 0.005, alpha = 0.7) +
+  labs(title = "Bootstrapped distribution of R-squared",
+       x = "R-squared")
+```
+
+The bootstrap distribution of the R-squared metric from the 5000 bootstrap samples assumes a slight left-skewed distribution, from the shape of the histogram.  
+
+
+```{r, warning=FALSE}
+#visualize bootstrap distribution of log(beta1 * beta2)
+ggplot(bootstrap_results, aes(x = Beta_product)) +
+  geom_histogram(binwidth = 0.1, alpha = 0.7) +
+  labs(title = "Bootstrapped distribution of log(beta1 * beta2)",
+       x = "log(beta1 * beta2)")
+
+```
+
+The bootstrap distribution of the log(beta1 * beta2) value from the 5000 bootstrap samples indicates a heavy left-skewed distribution.   
+
+
+```{r}
+#compute 95% confidence intervals for R-squared and log(beta1*beta2)
+confidence_intervals = summarize(bootstrap_results,
+  CIlower_R2 = quantile(R_squared, 0.025),
+  CIupper_R2 = quantile(R_squared, 0.975),
+  CIlower_b1xb2 = quantile(Beta_product, 0.025, na.rm=TRUE),
+  CIupper_b1xb2 = quantile(Beta_product, 0.975, na.rm=TRUE)) 
+
+confidence_intervals
+
+```
